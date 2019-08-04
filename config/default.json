@@ -1,0 +1,4 @@
+{
+  "mongoURI": "mongodb+srv://wcc-site-user:<pw>@wacochessclub-yg5kl.mongodb.net/test?retryWrites=true&w=majority",
+  "jwtSecret": ""
+}
