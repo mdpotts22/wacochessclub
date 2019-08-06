@@ -74,4 +74,51 @@ router.post(
   }
 );
 
+// @route   POST /api/users/change-password
+// @desc    Change the password for the logged in user
+// @access  Private
+router.post(
+  '/change-password',
+  [
+    auth,
+    [
+      check('oldPassword', 'Old password is required')
+        .not()
+        .isEmpty(),
+      check(
+        'newPassword',
+        'Please enter a password with at least 8 characters'
+      ).isLength({ min: 8 })
+    ]
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const { oldPassword, newPassword, newPassword2 } = req.body;
+    if (newPassword !== newPassword2) {
+      return res.status(400).json({
+        errors: [{ msg: 'New passwords do not match', param: 'newPassword2' }]
+      });
+    }
+    try {
+      let user = await User.findOne({ _id: req.user.id });
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({
+          errors: [{ msg: 'Old password does not match', param: 'oldPassword' }]
+        });
+      }
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+      user.save();
+      res.status(200).json({ msg: 'Password saved' });
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send('Server error');
+    }
+  }
+);
+
 module.exports = router;
