@@ -3,6 +3,8 @@ const router = express.Router();
 const auth = require('../../middleware/auth');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
+const sgTransport = require('nodemailer-sendgrid-transport');
 const { check, validationResult } = require('express-validator');
 const config = require('config');
 const crypto = require('crypto');
@@ -143,7 +145,34 @@ router.post('/forgot-password', async (req, res) => {
       },
       {}
     );
-    // TODO user nodemailer to send email
+
+    const options = {
+      auth: {
+        api_key: config.get('sendGridKey')
+      }
+    };
+    console.log(user.email);
+    var client = nodemailer.createTransport(sgTransport(options));
+    const mailOptions = {
+      to: user.email,
+      from: 'info@wacochess.org',
+      subject: 'Password Reset for ' + user.email,
+      text:
+        'You are receiving this email because you have requested a password reset.\n\n' +
+        'Please click the following link and follow the steps to reset your password.\n\n' +
+        'http://' +
+        req.headers.host +
+        '/api/auth/reset-password/' +
+        token +
+        '\n\n'
+    };
+    client.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log('message sent: ' + info.response);
+      }
+    });
     res.json({
       msg: 'Please check your email for password reset instructions'
     });
